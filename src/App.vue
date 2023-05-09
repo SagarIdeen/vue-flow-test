@@ -75,6 +75,8 @@ function onDrop(event) {
   })
 }
 
+
+
 const onSave = async () => {
   const value = getEdges.value;
   // GETTING THE EDGES OF NODES
@@ -87,67 +89,67 @@ const onSave = async () => {
     }
   }))
 
+
   const newValue = await getEdgesdata;
+  const finalData = [];
+  //setting the initial level 
+  const intiaterObjects = newValue.filter(obj => obj.label === "intiater");
+  const targetsOfIntiater = intiaterObjects.map(obj => ({ id: obj.target_id }));
 
-  const newArray = [];
-  // MODIFYING THE EDGES ARRAY
-  newValue.map((item, index) => {
-    const existingObject = newArray.find(obj => obj.source_id === item.source_id);
-    if (existingObject && newArray[newArray.length - 1].source_id === item.source_id) {
-      newArray[newArray.length - 1].targets.push({ target_id: item.target_id })
-    } else {
-      newArray.push({
-        label: item.label,
-        source_id: item.source_id,
-        targets: [{ target_id: item.target_id }]
-      })
-    }
-  })
-  // console.log(JSON.stringify(newArray));
+  if (intiaterObjects && finalData.length === 0) {
+
+    finalData.push({ level: 1, ids: [{ id: intiaterObjects[0].source_id }] })
+    finalData.push({ level: 2, ids: targetsOfIntiater })
+
+  }
+
+
+  for (let i = 0; i < newValue.length; i++) {
 
 
 
-  const sample = []
-  // MODIFYING THE ARRAY BASED ON THE LEVEL
-  newArray.map((item, index) => {
-
-    if (index === 0) {
-      sample.push(
-        {
-          level: 1,
-          data: [{ id: item.source_id }]
-        }
-      )
-
-      sample.push({
-        level: 2,
-        data: getD(item.targets)
-      })
-    } else {
-      const targetExists = sample.some(obj => obj.data.some(t => t.id === item.source_id));
-      if (targetExists) {
-        item.targets.map((i) => {
-          const targetExists2 = sample.some(obj => obj.data.some(t => t.id === i.target_id));
-          targetExists2 ? null : sample.push({
-            level: sample.length + 1,
-            data: getD(item.targets)
-            // data: [{ id: i.target_id }]
-          })
-        })
+    const selectedObjects = newValue.filter(obj => finalData[finalData.length - 1].ids.some(idObj => idObj.id === obj.source_id.toString()));
+    // console.log('mp:', JSON.stringify(selectedObjects));
+    if (selectedObjects.length > 0) {
+      const sameTargetId = checkSameTargetId(selectedObjects);
+      // console.log('checking same id', sameTargetId);
+      if (sameTargetId) {
+        finalData.push({ level: finalData[finalData.length - 1].level + 1, ids: [{ id: sameTargetId }] })
+      } else {
+        const targetsOfIntiater = selectedObjects.map(obj => ({ id: obj.target_id }));
+        finalData.push({ level: finalData[finalData.length - 1].level + 1, ids: targetsOfIntiater })
       }
     }
-  })
+    i++
+  }
 
-  console.log('sample', JSON.stringify(sample));
+  console.log('output', JSON.stringify(finalData));
+
 }
-const getD = (d) => {
-  return d.map((i) => {
-    return { id: i.target_id }
-  })
+
+
+function checkSameTargetId(objects) {
+  const targetId = objects[0].target_id;
+
+  if (objects.every(obj => obj.target_id === targetId)) {
+    return targetId;
+  }
+
+  return null;
 }
+
+
 
 const onDelete = () => {
   removeNodes(getSelectedNodes.value)
+}
+const onReset = () => {
+
+  let f = getNodes.value.filter(item1 => {
+    return item1.id.toString() != "0"
+  })
+  removeNodes(f)
+
 }
 
 </script>
@@ -155,18 +157,19 @@ const onDelete = () => {
 
 <template>
   <div class="dndflow" @drop="onDrop">
-    <VueFlow fit-view-on-init class="vue-flow-basic-example" @dragover="onDragOver">
-
+    <VueFlow @dragover="onDragOver" :default-viewport="{ zoom: 1.5 }">
       <template #node-toolbar="nodeProps">
+
         <ToolbarNode :data="nodeProps.data" :label="nodeProps.label" :id="nodeProps.id" v-on:delete="onDelete" />
       </template>
       <Panel :position="PanelPosition.BottomRight">
         <div>
           <button @click="onSave">Save</button>
+          <button @click="onReset">Reset</button>
         </div>
       </Panel>
     </VueFlow>
+
     <Sidebar :dragged-nodes="getNodes" />
   </div>
 </template>
-

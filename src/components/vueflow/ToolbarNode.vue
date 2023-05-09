@@ -11,7 +11,8 @@ const defaultNodeStyle = {
     background: '#fff',
     color: 'black',
     borderRadius: '5px',
-    padding: '8px 40px'
+    padding: '8px 40px',
+    stroke: "#ccc"
 }
 
 
